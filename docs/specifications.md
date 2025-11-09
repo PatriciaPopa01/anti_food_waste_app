@@ -1,6 +1,7 @@
 Aplicație web pentru a preveni risipa de alimente
 
 1. Introducere
+
 1.1. Prezentare Generală
    
 Aplicația web este concepută pentru a combate risipa alimentară la nivel de gospodărie. 
