@@ -3,9 +3,9 @@ const router = express.Router();
 const claimController = require('../controllers/claimController');
 
 // GET /claims 
-router.get('/', claimController.getClaims);
+router.get('/',authMiddleware, claimController.getClaims);
 
 // PATCH /claims/:id (Acceptare/Respingere)
-router.patch('/:id', claimController.updateClaimStatus);
+router.patch('/:id',authMiddleware, claimController.updateClaimStatus);
 
 module.exports = router;

@@ -2,14 +2,15 @@ const express = require('express');
 const router = express.Router();
 const inventoryController = require('../controllers/inventoryController');
 const claimController = require('../controllers/claimController');
+const authMiddleware =  require("../middleware/authMiddleware")
 
-router.post('/', inventoryController.createProduct);
-router.get('/', inventoryController.getAllProducts);
-router.get('/:id', inventoryController.getProductById);
-router.patch('/:id', inventoryController.updateProduct);
-router.delete('/:id', inventoryController.deleteProduct);
+router.post('/',authMiddleware,  inventoryController.createProduct);
+router.get('/',authMiddleware, inventoryController.getAllProducts);
+router.get('/:id',authMiddleware, inventoryController.getProductById);
+router.patch('/:id',authMiddleware,inventoryController.updateProduct);
+router.delete('/:id',authMiddleware,inventoryController.deleteProduct);
 
-router.post('/:id/claims', claimController.createClaim);      
-router.get('/:id/claims', claimController.getClaimsForProduct); 
+router.post('/:id/claims',authMiddleware,claimController.createClaim);      
+router.get('/:id/claims',authMiddleware,claimController.getClaimsForProduct); 
 
 module.exports = router;
