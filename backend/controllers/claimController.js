@@ -3,7 +3,7 @@ const { Claim, Product, User } = require('../models');
 const createClaim = async (req, res) => {
     try {
         const { id } = req.params; 
-        const { claimerId } = req.body; 
+        const claimerId = req.user.id; 
 
         const product = await Product.findByPk(id);
         if (!product) {
