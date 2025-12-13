@@ -7,12 +7,11 @@ const { Product } = require('../models');
  * It performs validation on required fields (name, category, quantity, expiry date)
  * and links the product to the current user (ownerId) derived from the auth token.
  */
-const createProduct = async (req, res) => {
+const createProduct = async (req, res, next) => {
     try {
         const ownerId = req.user.id;
         let { name, category, quantity, expiryDate, notes } = req.body;
 
-        // validări minime
         if (!name || !name.trim()) {
             return res.status(400).json({ message: "name is required" });
         }
@@ -51,11 +50,11 @@ const createProduct = async (req, res) => {
  * Users can filter by 'category' or 'status' and sort the results by expiration date,
  * creation date, or name. The default sort order highlights items expiring soonest.
  */
-const getAllProducts = async (req, res) => {
+const getAllProducts = async (req, res, next) => {
     try {
         const { category, status, sort, order } = req.query;
 
-        const whereClause = {};
+        const whereClause = {ownerId: req.user.id};
         if (category) {
             whereClause.category = category;
         }
@@ -80,7 +79,7 @@ const getAllProducts = async (req, res) => {
 
         res.status(200).json(products);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        next(error);
     }
 };
 
@@ -90,10 +89,15 @@ const getAllProducts = async (req, res) => {
  * * This function fetches a single product by its unique ID.
  * It returns the product object if found, or a 404 error if the ID does not exist.
  */
-const getProductById = async (req, res) => {
+const getProductById = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const product = await Product.findByPk(id);
+        const product = await Product.findOne({
+            where: {
+                id: id,
+                ownerId: req.user.id
+            }
+        });
 
         if (!product) {
             return res.status(404).json({ message: 'Product not found' });
@@ -101,7 +105,7 @@ const getProductById = async (req, res) => {
 
         res.status(200).json(product);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        next(error);
     }
 };
 
@@ -112,10 +116,15 @@ const getProductById = async (req, res) => {
  * It uses the data provided in the request body to update the corresponding fields
  * in the database.
  */
-const updateProduct = async (req, res) => {
+const updateProduct = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const product = await Product.findByPk(id);
+        const product = await Product.findOne({
+            where: {
+                id: id,
+                ownerId: req.user.id
+            }
+        });
 
         if (!product) {
             return res.status(404).json({ message: 'Product not found' });
@@ -124,7 +133,7 @@ const updateProduct = async (req, res) => {
         await product.update(req.body);
         res.status(200).json(product);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        next(error);
     }
 };
 
@@ -134,10 +143,15 @@ const updateProduct = async (req, res) => {
  * * This function permanently removes a product record from the database
  * based on the provided ID. It returns a 204 No Content status upon success.
  */
-const deleteProduct = async (req, res) => {
+const deleteProduct = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const product = await Product.findByPk(id);
+        const product = await Product.findOne({
+            where: {
+                id: id,
+                ownerId: req.user.id
+            }
+        });
 
         if (!product) {
             return res.status(404).json({ message: 'Product not found' });
@@ -146,7 +160,7 @@ const deleteProduct = async (req, res) => {
         await product.destroy();
         res.status(204).send();
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        next(error);
     }
 };
 

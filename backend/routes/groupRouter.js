@@ -18,4 +18,7 @@ router.get("/:id/members", authMiddleware , groupController.getMembersFromGroup)
 
 router.delete("/:id/members/me",authMiddleware , groupController.leaveGroup) // DELETE /groups/:id/members -> the logged user wants to leave the group 
 
+router.post("/:id/members/:memberId/tags", authMiddleware, groupController.addTagToMember);  // POST /groups/:id/members/:memberId/tags for logged user -> create a tag for the specified member of the specified group 
+router.delete("/:id/members/:memberId/tags/:tagId", authMiddleware, groupController.removeTagFromMember); // POST /groups/:id/members/:memberId/tags/:tagId for logged user -> remove the specified tag from the specified member of the specified group 
+
 module.exports  = router

@@ -6,14 +6,19 @@ const { Product } = require('../models');
  * * This function fetches the product details and constructs a specialized URL for the 
  * Facebook Sharer.
  */
-const generateFacebookShare = async (req, res) => {
+const generateFacebookShare = async (req, res, next) => {
     try {
         const { productId } = req.params;
 
         const product = await Product.findByPk(productId);
         
         if (!product) {
-            return res.status(404).json({ message: "Produsul nu există" });
+            return res.status(404).json({ message: "Product does not exist." });
+        }
+
+        // Verific dac produsul mai e disponibil
+        if (product.status !== 'available') {
+            return res.status(400).json({ message: "Only available products can be shared." });
         }
 
         const appLink = "http://localhost:3000"; 
@@ -28,7 +33,7 @@ const generateFacebookShare = async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        next(error); 
     }
 };
 
@@ -40,16 +45,21 @@ const generateFacebookShare = async (req, res) => {
  * this endpoint returns the text for the user to copy and paste manually into their Instagram app 
  * along with instructions.
  */
-const generateInstagramContent = async (req, res) => {
+const generateInstagramContent = async (req, res, next) => {
     try {
         const { productId } = req.params;
         const product = await Product.findByPk(productId);
 
         if (!product) {
-            return res.status(404).json({ message: "Produsul nu există" });
+            return res.status(404).json({ message: "Product does not exist." });
         }
 
-        const message = `Donez ${product.name}! Expiră la: ${product.expiryDate}. Contactează-mă pe AntiFoodWaste App! #StopFoodWaste`;
+        // check status
+        if (product.status !== 'available') {
+            return res.status(400).json({ message: "Only available products can be shared." });
+        }
+
+        const message = `Donez ${product.name}! Expiră la: ${product.expiryDate}. Contactează-mă pe AntiFoodWaste App!  #StopFoodWaste`;
 
         res.status(200).json({
             platform: 'instagram',
@@ -59,7 +69,7 @@ const generateInstagramContent = async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        next(error);
     }
 };
 

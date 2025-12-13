@@ -7,17 +7,17 @@ const { Claim, Product, User } = require('../models');
  * It validates that the product exists and is currently marked as 'available'. 
  * If valid, it creates a new claim record with a 'pending' status.
  */
-const createClaim = async (req, res) => {
+const createClaim = async (req, res, next) => {
     try {
         const { id } = req.params; 
         const claimerId = req.user.id; 
 
         const product = await Product.findByPk(id);
         if (!product) {
-            return res.status(404).json({ message: 'Product not found!' });
+            return res.status(404).json({ message: 'Product not found.' });
         }
         if (product.status !== 'available') {
-            return res.status(400).json({ message: 'This product is no longer available!' });
+            return res.status(400).json({ message: 'This product is no longer available.' });
         }
 
         const claim = await Claim.create({
@@ -28,7 +28,7 @@ const createClaim = async (req, res) => {
 
         res.status(201).json(claim);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        next(error);
     }
 };
 
@@ -39,9 +39,11 @@ const createClaim = async (req, res) => {
  * If 'as' is 'claimer', it returns claims made *by* the specified user. 
  * If 'as' is 'owner', it returns claims made *on* products owned by the specified user.
  */
-const getClaims = async (req, res) => {
+
+const getClaims = async (req, res, next) => {
     try {
-        const { as, userId } = req.query; 
+        const { as } = req.query; 
+        const userId = req.user.id; 
 
         if (!userId) {
             return res.status(400).json({ message: 'userID parameter is required for filtering.' }); 
@@ -62,17 +64,18 @@ const getClaims = async (req, res) => {
                         where: { ownerId: userId } 
                     },
                     {
-                        model: User 
+                        model: User,
+                        attributes: ['id', 'username', 'email', 'phone'] 
                     }
                 ]
             });
         } else {
-            return res.status(400).json({ message: 'The "as" parameter must be "claimer" or "owner".' });
+            return res.status(400).json({ message: 'Parameter "as" has to be "claimer" or "owner".' });
         }
 
         res.status(200).json(claims);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        next(error);
     }
 };
 
@@ -83,16 +86,32 @@ const getClaims = async (req, res) => {
  * It includes details about the users who made the claims, allowing the owner 
  * to see who is interested in their item.
  */
-const getClaimsForProduct = async (req, res) => {
+const getClaimsForProduct = async (req, res, next) => {
     try {
-        const { id } = req.params;
+        const { id } = req.params; 
+        const userId = req.user.id; 
+
+        const product = await Product.findByPk(id);
+
+        if (!product) {
+            return res.status(404).json({ message: 'Product not found.' });
+        }
+
+        if (product.ownerId !== userId) {
+            return res.status(403).json({ message: 'Access denied. Only the owner can see the claims.' });
+        }
+
         const claims = await Claim.findAll({
             where: { productId: id },
-            include: [{ model: User }] 
+            include: [{ 
+                model: User,
+                attributes: ['id', 'username', 'email', 'phone', 'bio'] 
+            }] 
         });
+
         res.status(200).json(claims);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        next(error);
     }
 };
 
@@ -105,22 +124,26 @@ const getClaimsForProduct = async (req, res) => {
  * to 'claimed' to prevent further requests. It also performs a check to ensure 
  * the product is still available before approving.
  */
-const updateClaimStatus = async (req, res) => {
+const updateClaimStatus = async (req, res, next) => {
     try {
         const { id } = req.params; 
         const { status } = req.body; // 'approved' sau 'rejected'
 
         const claim = await Claim.findByPk(id, { include: Product });
         if (!claim) {
-            return res.status(404).json({ message: 'Claim not found!' });
+            return res.status(404).json({ message: 'The claim does not exist.' });
+        }
+
+        if (claim.Product.ownerId !== req.user.id) {
+            return res.status(403).json({ message: 'You do not have the right to approve claims for this product.' });
         }
 
         if (status === 'approved') {
-            // if we accept the request we must change the product status to "claimed"
+            // Daca accept cererea, trebuie sa marchez produsul ca "claimed"
             const product = await Product.findByPk(claim.productId);
             
             if (product.status !== 'available') {
-                return res.status(400).json({ message: 'This product is no longer available!' });
+                return res.status(400).json({ message: 'Product no longer available.' });
             }
 
             product.status = 'claimed';
@@ -132,7 +155,7 @@ const updateClaimStatus = async (req, res) => {
 
         res.status(200).json(claim);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        next(error);
     }
 };
 

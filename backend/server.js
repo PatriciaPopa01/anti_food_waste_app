@@ -10,6 +10,7 @@ const productRouter = require("./routes/productRouter")
 const feedRouter = require("./routes/feedRouter")
 const groupRouter = require("./routes/groupRouter")
 const debugGroupRouter = require("./routes/debugGroupRouter")
+const tagRoutes = require("./routes/tagRoutes");
 
 const app = express();
 const port = 3000;
@@ -26,6 +27,7 @@ app.use("/debug",debugGroupRouter)
 app.use('/inventory', inventoryRoutes);
 app.use('/claims', claimRoutes);
 app.use('/integrations', integrationRoutes);
+app.use("/tags", tagRoutes);
 
 // GET localhost:3000/ -> for testing the conection and also to create the data base
 app.get("/", async (req, res, next) => {
