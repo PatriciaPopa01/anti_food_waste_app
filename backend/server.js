@@ -1,4 +1,3 @@
-
 const cors = require('cors');
 const express = require("express");
 const { sequelize } = require("./models");
@@ -15,13 +14,22 @@ const debugGroupRouter = require("./routes/debugGroupRouter")
 const tagRoutes = require("./routes/tagRoutes");
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 8080;
 
-app.use(cors({
-  origin: 'https://anti-food-waste-app-nu.vercel.app',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true
-}));
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || origin.includes('vercel.app') || origin.includes('railway.app')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 app.use(express.urlencoded({ extended: true }));
